@@ -1,0 +1,11 @@
+venv/
+.venv/
+.env
+__pycache__/
+*.pyc
+data/*.pdf
+data/*.bin
+data/*.pkl
+data/*.npy
+data/*.index
+*.chunks.json

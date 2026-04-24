@@ -1,0 +1,12 @@
+groq
+anthropic
+openai
+streamlit
+sentence-transformers
+faiss-cpu
+PyMuPDF
+pandas
+numpy
+scikit-learn
+requests
+python-dotenv
