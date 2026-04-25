@@ -109,19 +109,27 @@ def initialize_system(force_rebuild: bool = False) -> Tuple[RAGPipeline, Retriev
 def main() -> None:
     """Render Streamlit UI and handle chat and feedback interactions."""
     st.set_page_config(page_title="ACity RAG Assistant", layout="wide")
+    if "pipeline_obj" not in st.session_state:
+        st.session_state.pipeline_obj = None
+    if "retriever_obj" not in st.session_state:
+        st.session_state.retriever_obj = None
 
-    with st.spinner("Initializing datasets, embeddings, and vector index..."):
+    def ensure_initialized(force_rebuild: bool = False) -> bool:
+        """Initialize pipeline objects on demand and store in session state."""
         try:
-            pipeline, retriever = initialize_system()
+            with st.spinner("Initializing datasets, embeddings, and vector index..."):
+                pipeline_obj, retriever_obj = initialize_system(force_rebuild=force_rebuild)
+            st.session_state.pipeline_obj = pipeline_obj
+            st.session_state.retriever_obj = retriever_obj
+            return True
         except Exception as exc:
             st.error(f"Initialization failed: {exc}")
-            return
+            return False
 
     st.sidebar.title("ACity RAG Assistant")
     template_display = st.sidebar.selectbox("Prompt Template", ["Strict", "Analytical", "Conversational"], index=0)
     top_k = st.sidebar.slider("Top-K results", min_value=1, max_value=10, value=5)
     alpha = st.sidebar.slider("Hybrid search alpha", min_value=0.0, max_value=1.0, value=0.6, step=0.05)
-    retriever.alpha = alpha
 
     feedback_stats = read_feedback_stats()
     st.sidebar.subheader("Feedback Stats")
@@ -130,9 +138,13 @@ def main() -> None:
 
     if st.sidebar.button("Rebuild Index"):
         st.cache_resource.clear()
-        with st.spinner("Rebuilding index..."):
-            initialize_system(force_rebuild=True)
-        st.success("Index rebuilt successfully. Reload the page if needed.")
+        st.session_state.pipeline_obj = None
+        st.session_state.retriever_obj = None
+        if ensure_initialized(force_rebuild=True):
+            st.success("Index rebuilt successfully.")
+
+    if st.sidebar.button("Initialize System"):
+        ensure_initialized(force_rebuild=False)
 
     with st.sidebar.expander("About this system"):
         st.write(
@@ -149,8 +161,23 @@ def main() -> None:
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
+    pipeline = st.session_state.pipeline_obj
+    retriever = st.session_state.retriever_obj
+
+    if pipeline is None or retriever is None:
+        st.info("System is not initialized yet. Ask a question or click 'Initialize System' in the sidebar.")
+    else:
+        retriever.alpha = alpha
+
     query = st.chat_input("Ask a question about Ghana election results or the 2025 budget...")
     if query:
+        if pipeline is None or retriever is None:
+            if not ensure_initialized(force_rebuild=False):
+                return
+            pipeline = st.session_state.pipeline_obj
+            retriever = st.session_state.retriever_obj
+            retriever.alpha = alpha
+
         st.session_state.messages.append({"role": "user", "content": query})
         with st.chat_message("user"):
             st.write(query)
