@@ -9,3 +9,4 @@ data/*.pkl
 data/*.npy
 data/*.index
 *.chunks.json
+logs/*.jsonl

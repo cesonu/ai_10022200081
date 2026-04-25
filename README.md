@@ -9,12 +9,24 @@ Index Number: [YOUR INDEX]
 2. Install dependencies:
    `pip install -r requirements.txt`
 3. Create a `.env` file and set:
-   `ANTHROPIC_API_KEY=...`
-   Optional fallback: `OPENAI_API_KEY=...`
+   `GROQ_API_KEY=...`
+   Optional fallbacks: `ANTHROPIC_API_KEY=...`, `OPENAI_API_KEY=...`
 
 ## Run
 
 `streamlit run app.py`
+
+## Deploy on Render
+
+1. Push this repository to GitHub.
+2. In Render, create a new Web Service from the repo.
+3. Render will auto-detect `render.yaml`, or use:
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `streamlit run app.py --server.port=10000 --server.address=0.0.0.0`
+4. Set environment variables in Render dashboard:
+   - `GROQ_API_KEY` (recommended primary)
+   - Optional: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`
+5. Deploy. On first boot, datasets are downloaded and index is built automatically.
 
 ## Architecture Summary
 
@@ -22,7 +34,7 @@ This project implements a complete Retrieval-Augmented Generation pipeline manua
 
 The retrieval layer uses sentence-transformer embeddings with a FAISS cosine-similarity index for semantic search, then blends those scores with TF-IDF keyword scores to create a hybrid ranker. This supports both conceptual queries and exact-entity queries involving names, years, and numeric values.
 
-The generation layer builds a constrained prompt from selected chunks and sends it to Anthropic Claude, with OpenAI fallback if needed. Every pipeline run logs retrieval scores, prompt content, truncation decisions, and stage timings for reproducible analysis and evaluation.
+The generation layer builds a constrained prompt from selected chunks and sends it to Groq first, with Anthropic and OpenAI fallbacks if configured. Every pipeline run logs retrieval scores, prompt content, truncation decisions, and stage timings for reproducible analysis and evaluation.
 
 ## Chunking Strategy Justification
 
